@@ -1,8 +1,26 @@
 import React, { FormEvent, useRef, useState, useEffect } from "react";
+import ColorModeSwitch from "./ColorMode";
+import { Button, Flex } from "@chakra-ui/react";
+import { SliderMark } from "@mui/material";
 
 const Form = () => {
   const exerciseRef = useRef<HTMLSelectElement>(null);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
+  const [availableExercises, setAvailableExercises] = useState<string[]>([
+    "Push-Ups 5*60sec",
+    "Push-Ups 5*90sec",
+    "Pull-Ups MAX 5*120sec",
+    "Chin-Ups MAX 5*120sec",
+    "Pull/Chin-Ups Mix 9*60sec",
+    "Handstand Floor/Handstand Push-Ups Wall 2*(3*3)",
+    "Handstand Bar/ Handstand Push-Ups Free 2*(3*3)",
+    "Hold abs",
+    "Abs mix",
+    "Jogging 1",
+    "Jogging 2",
+    "Jogging 3",
+    "Jogging 4",
+  ]);
 
   useEffect(() => {
     //reason: Code for loading data from local Storage is exectued after the inital render ([])
@@ -19,6 +37,12 @@ const Form = () => {
     event.preventDefault();
     if (exerciseRef.current !== null) {
       const selectedExercise = exerciseRef.current.value;
+
+      // Remove the completed exercise from available exercises
+      setAvailableExercises((prevExercises) =>
+        prevExercises.filter((exercise) => exercise !== selectedExercise)
+      );
+
       setCompletedExercises((prevExercises) => [
         ...prevExercises,
         selectedExercise,
@@ -29,38 +53,41 @@ const Form = () => {
         "completedExercises", //key
         JSON.stringify([...completedExercises, selectedExercise])
       );
-      console.log(exerciseRef.current.value);
     }
+  };
+
+  const handleDelete = (index: number) => {
+    const updatedExercises = [...completedExercises]; //copy of the current state array
+    const deletedExercise = updatedExercises.splice(index, 1)[0]; //remove 1 element at the specific index
+
+    // Add the deleted exercise back to available exercises
+    setAvailableExercises((prevExercises) => [
+      ...prevExercises,
+      deletedExercise,
+    ]);
+
+    setCompletedExercises(updatedExercises); //update state with uppdated array
+    localStorage.setItem(
+      "completedExercises",
+      JSON.stringify(updatedExercises) //updatest local storage with the latest array.
+      //Converts the array to a JSOn Strng befire storing it.
+    );
   };
 
   return (
     <>
+      <ColorModeSwitch />
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <label htmlFor="exercise" className="form-label">
             Workouts
           </label>
           <select ref={exerciseRef} className="form-control">
-            <option value="Push-Ups 5*60sec">Push-Ups 5*60sec</option>
-            <option value="Push-Ups 5*90sec">Push-Ups 5*90sec</option>
-            <option value=">Pull-Ups MAX 5*120sec">
-              Pull-Ups MAX 5*120sec
-            </option>
-            <option value="Chin-Ups MAX 5*120sec">Chin-Ups MAX 5*120sec</option>
-            <option value="Pull/Chin-Ups Mix 9*60sec">
-              Pull/Chin-Ups Mix 9*60sec
-            </option>
-            <option value=" Handstand Floor/Handstand Push-Ups Wall 2*(3*3)">
-              Handstand Floor/Handstand Push-Ups Wall 2*(3*3)
-            </option>
-            <option value="Handstand Bar/ Handstand Push-Ups Free 2*(3*3)">
-              Handstand Bar/ Handstand Push-Ups Free 2*(3*3){" "}
-            </option>
-            <option value="Hold abs">Hold abs</option>
-            <option value="Abs mix<">Abs mix</option>
-            <option value="Jogging 1">Jogging 1</option>
-            <option value="Jogging 2">Jogging 2</option>
-            <option value="Jogging 3<">Jogging 3</option>
+            {availableExercises.map((exercise, index) => (
+              <option key={index} value={exercise}>
+                {exercise}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -73,9 +100,24 @@ const Form = () => {
           <h2>Completed Workout:</h2>
           <ul className="list-group">
             {completedExercises.map((exercise, index) => (
-              <li className="list-group-item" key={index}>
+              <Flex
+                key={index}
+                justifyContent="space-between"
+                alignItems="center"
+                p={2}
+                borderWidth="1px"
+                borderRadius="md"
+                marginBottom={2}
+              >
                 {exercise}
-              </li>
+                <Button
+                  size="sm"
+                  colorScheme="red"
+                  onClick={() => handleDelete(index)}
+                >
+                  Delete
+                </Button>
+              </Flex>
             ))}
           </ul>
         </div>
