@@ -1,12 +1,17 @@
 import React, { FormEvent, useRef, useState, useEffect } from "react";
 import ColorModeSwitch from "./ColorMode";
-import { Button, Flex } from "@chakra-ui/react";
-import { SliderMark } from "@mui/material";
+import ExerciseDropdown from "./ExericseDropdown";
+import RepsModal from "./RepsModal";
+import CompletedExercises from "./CompletedExercises";
 
 const Form = () => {
   const exerciseRef = useRef<HTMLSelectElement>(null);
+  //useref hook is used to access the selected values from the dropdown menu, when the form is submitted
+
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [availableExercises, setAvailableExercises] = useState<string[]>([
+    //string[] --> specifies data type of data that will be stored in the state,
+    // is an empyt array that will hold srtings
     "Push-Ups 5*60sec",
     "Push-Ups 5*90sec",
     "Pull-Ups MAX 5*120sec",
@@ -22,106 +27,112 @@ const Form = () => {
     "Jogging 4",
   ]);
 
+  const [showRepsModal, setShowRepsModal] = useState<boolean>(false);
+  //manages visibility of a modal window: Its a boolan and sets is inital state to false --> no visible when the component loads
+  const [selectedExercise, setSelectedExercise] = useState<string>("");
+  //empty string: No exercise is selected when component moutns
+  const [reps, setReps] = useState<number[]>([0, 0, 0, 0, 0]);
+
   useEffect(() => {
-    //reason: Code for loading data from local Storage is exectued after the inital render ([])
-    // Load completed exercises from local storage when the component mounts
+    //Should only run once when the component is mounted
+    // if data is found --> previously stored data in localStorage
     const storedExercises = localStorage.getItem("completedExercises");
-    //retries value from completedExercise("Pushups 5*60sec") from local storage: JSON String
     if (storedExercises) {
       setCompletedExercises(JSON.parse(storedExercises));
-      // comverting strings into array
+      //Json parse to convert the JSON string bac into an array and updates the setCompledtedExercises
     }
   }, []);
 
   const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
+    event.preventDefault(); // prevents page refresh
     if (exerciseRef.current !== null) {
-      const selectedExercise = exerciseRef.current.value;
+      const selected = exerciseRef.current.value;
+      setSelectedExercise(selected);
 
-      // Remove the completed exercise from available exercises
-      setAvailableExercises((prevExercises) =>
-        prevExercises.filter((exercise) => exercise !== selectedExercise)
-      );
-
-      setCompletedExercises((prevExercises) => [
-        ...prevExercises,
-        selectedExercise,
-      ]);
-
-      // Save completed exercises to local storage
-      localStorage.setItem(
-        "completedExercises", //key
-        JSON.stringify([...completedExercises, selectedExercise])
-      );
+      if (
+        selected.includes("Pull-Ups MAX 5*120sec") ||
+        selected.includes("Pull/Chin-Ups Mix 9*60sec") ||
+        selected.includes("Push-Ups 5*60sec") ||
+        selected.includes("Push-Ups 5*90sec")
+      ) {
+        setShowRepsModal(true);
+      } else {
+        handleCompletedExercise(selected);
+      }
     }
   };
 
-  const handleDelete = (index: number) => {
-    const updatedExercises = [...completedExercises]; //copy of the current state array
-    const deletedExercise = updatedExercises.splice(index, 1)[0]; //remove 1 element at the specific index
+  const handleCompletedExercise = (exercise: string) => {
+    setAvailableExercises(
+      (prevExercises) => prevExercises.filter((ex) => ex !== exercise)
+      //Removing the completed exercise form the list of available exercises
+      //filter creates a new array containing only elements where the callback function return true
+      //ex represents each individual element of the array during interation
+      // !== --> this is a strict inequality operaton in JS, checks if two values are not equal and ensures that their types are not the same
+      //exercise:
+    );
+    setCompletedExercises((prevExercises) => [...prevExercises, exercise]);
+    localStorage.setItem(
+      //add data to the browers local storage
+      "completedExercises", //represent the key under which the data will be stored
+      JSON.stringify([...completedExercises, exercise])
+      //Converts array into JSON string
+    );
+  };
 
-    // Add the deleted exercise back to available exercises
+  const handleDelete = (index: number) => {
+    const updatedExercises = [...completedExercises];
+    const deletedExercise = updatedExercises.splice(index, 1)[0];
+    console.log(deletedExercise);
+    //1: indictaes the number of of elements to remove starting from the index
+    //[0]:
     setAvailableExercises((prevExercises) => [
       ...prevExercises,
       deletedExercise,
     ]);
-
-    setCompletedExercises(updatedExercises); //update state with uppdated array
+    setCompletedExercises(updatedExercises);
     localStorage.setItem(
       "completedExercises",
-      JSON.stringify(updatedExercises) //updatest local storage with the latest array.
-      //Converts the array to a JSOn Strng befire storing it.
+      JSON.stringify(updatedExercises)
     );
+  };
+
+  const handleSaveReps = () => {
+    // Check if all reps are greater than zero
+    if (reps.every((rep) => rep > 0)) {
+      // Format reps array into a string representation
+      const formattedReps = reps.join(", ");
+
+      // Add the exercise with reps to completed exercises
+      handleCompletedExercise(`${selectedExercise}`);
+
+      // Reset states and close the modal
+      setShowRepsModal(false);
+      setReps([0, 0, 0, 0, 0]);
+      setSelectedExercise("");
+    }
   };
 
   return (
     <>
       <ColorModeSwitch />
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="exercise" className="form-label">
-            Workouts
-          </label>
-          <select ref={exerciseRef} className="form-control">
-            {availableExercises.map((exercise, index) => (
-              <option key={index} value={exercise}>
-                {exercise}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button className="btn btn-primary" type="submit">
-          Completed
-        </button>
-      </form>
-      {completedExercises.length > 0 && (
-        <div className="mb-3">
-          <h2>Completed Workout:</h2>
-          <ul className="list-group">
-            {completedExercises.map((exercise, index) => (
-              <Flex
-                key={index}
-                justifyContent="space-between"
-                alignItems="center"
-                p={2}
-                borderWidth="1px"
-                borderRadius="md"
-                marginBottom={2}
-              >
-                {exercise}
-                <Button
-                  size="sm"
-                  colorScheme="red"
-                  onClick={() => handleDelete(index)}
-                >
-                  Delete
-                </Button>
-              </Flex>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ExerciseDropdown
+        exerciseRef={exerciseRef}
+        availableExercises={availableExercises}
+        handleSubmit={handleSubmit}
+      />
+      <RepsModal
+        showRepsModal={showRepsModal}
+        reps={reps}
+        setShowRepsModal={setShowRepsModal}
+        setReps={setReps}
+        handleSaveReps={handleSaveReps}
+        setSelectedExercise={setSelectedExercise}
+      />
+      <CompletedExercises
+        completedExercises={completedExercises}
+        handleDelete={handleDelete}
+      />
     </>
   );
 };
