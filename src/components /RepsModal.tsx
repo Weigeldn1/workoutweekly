@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -27,6 +27,20 @@ const RepsModal: React.FC<RepsModalProps> = ({
   handleSaveReps,
   setSelectedExercise,
 }) => {
+  const [error, setError] = useState<boolean>(false);
+
+  const validateReps = () => {
+    //Check if any rep field is empty
+    const emptyRepField = reps.some((rep) => rep === 0);
+    // array.some checks if at least one element in an array passes a specific condition and returns a boolean
+    if (emptyRepField) {
+      setError(true);
+    } else {
+      setError(false); //resets error state if all fields have values
+      handleSaveReps();
+    }
+  };
+
   return (
     <Modal isOpen={showRepsModal} onClose={() => setShowRepsModal(false)}>
       {/* isOpen: when showRepsModal is true, dann wird uns angezeigt */}
@@ -109,7 +123,12 @@ const RepsModal: React.FC<RepsModalProps> = ({
           />
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" mr={3} onClick={handleSaveReps}>
+          {error && (
+            <p style={{ color: "red", marginBottom: "10px" }}>
+              I hope you finished all 5 rep fields!
+            </p>
+          )}
+          <Button colorScheme="blue" mr={3} onClick={validateReps}>
             Save
           </Button>
           <Button onClick={() => setShowRepsModal(false)}>Cancel</Button>
