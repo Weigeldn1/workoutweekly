@@ -51,6 +51,7 @@ const Form = () => {
 
       if (
         selected.includes("Pull-Ups MAX 5*120sec") ||
+        selected.includes("Chin-Ups MAX 5*120sec") ||
         selected.includes("Pull/Chin-Ups Mix 9*60sec") ||
         selected.includes("Push-Ups 5*60sec") ||
         selected.includes("Push-Ups 5*90sec")
